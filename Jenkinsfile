@@ -74,6 +74,10 @@ spec:
       steps {
         container('kaniko') {
           sh """
+            echo '📁 현재 위치: ' `pwd`
+            echo '📄 index.html 파일 있는지 확인:'
+            ls -al
+            cat index.html || echo '❌ index.html 없음'
             /kaniko/executor \
               --context `pwd` \
               --dockerfile `pwd`/Dockerfile \
