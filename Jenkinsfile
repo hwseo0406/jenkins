@@ -40,7 +40,7 @@ spec:
   stages {
     stage('Checkout App Repo') {
       steps {
-        git credentialsId: 'github-token', url: 'https://github.com/hwseo0406/hwseo_site.git', branch: 'main'
+        git credentialsId: 'github-token', url: 'https://github.com/hwseo0406/jenkins.git', branch: 'main'
       }
     }
 
