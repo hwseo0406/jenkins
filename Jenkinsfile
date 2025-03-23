@@ -84,6 +84,13 @@ spec:
               --destination=${FULL_IMAGE} \
               --insecure \
               --skip-tls-verify
+                    # latest 태그로도 push
+            /kaniko/executor \
+              --context `pwd` \
+              --dockerfile `pwd`/Dockerfile \
+              --destination=${IMAGE_NAME}:latest \
+              --insecure \
+              --skip-tls-verify
           """
         }
       }
