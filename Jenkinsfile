@@ -111,6 +111,12 @@ spec:
         container('jnlp') {
           withCredentials([string(credentialsId: 'jenkinsSA', variable: 'K8S_TOKEN')]) {
             sh """
+              echo "📦 kubectl 설치 중 (임시)"
+              apt-get update && apt-get install -y curl gnupg apt-transport-https ca-certificates
+              curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+              echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list
+              apt-get update && apt-get install -y kubectl
+
               echo "🔧 kubeconfig 생성"
               cat <<EOF > kubeconfig.yaml
 apiVersion: v1
