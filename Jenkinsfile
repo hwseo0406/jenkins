@@ -44,32 +44,6 @@ spec:
       }
     }
 
-    stage('Skip CI Check') {
-      steps {
-        container('jnlp') {
-          script {
-            def skip = sh(
-              script: "git log -1 --pretty=%B | grep -c '\\[skip ci\\]' || true",
-              returnStdout: true
-            ).trim()
-            if (skip == "1") {
-              echo "⏭️ [skip ci] 커밋이 감지되어 파이프라인을 종료합니다."
-              currentBuild.result = 'SUCCESS'
-              error("[skip ci] detected - stopping pipeline.")
-            }
-          }
-        }
-      }
-    }
-
-    stage('Check Kaniko Config') {
-      steps {
-        container('kaniko') {
-          sh 'cat /kaniko/.docker/config.json || echo "❌ config.json not found"'
-        }
-      }
-    }
-
     stage('Build & Push with Kaniko') {
       steps {
         container('kaniko') {
@@ -78,13 +52,14 @@ spec:
             echo '📄 index.html 파일 있는지 확인:'
             ls -al
             cat index.html || echo '❌ index.html 없음'
+
             /kaniko/executor \
               --context `pwd` \
               --dockerfile `pwd`/Dockerfile \
               --destination=${FULL_IMAGE} \
               --insecure \
               --skip-tls-verify
-                    # latest 태그로도 push
+
             /kaniko/executor \
               --context `pwd` \
               --dockerfile `pwd`/Dockerfile \
@@ -130,11 +105,53 @@ spec:
         }
       }
     }
+
+    stage('Deploy to Kubernetes') {
+      steps {
+        container('jnlp') {
+          withCredentials([string(credentialsId: 'jenkinsSA', variable: 'K8S_TOKEN')]) {
+            sh """
+              echo "🔧 kubeconfig 생성"
+              cat <<EOF > kubeconfig.yaml
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    server: https://172.18.0.4:6443
+    insecure-skip-tls-verify: true
+  name: jenkins-cluster
+users:
+- name: jenkins
+  user:
+    token: ${K8S_TOKEN}
+contexts:
+- context:
+    cluster: jenkins-cluster
+    user: jenkins
+  name: jenkins-context
+current-context: jenkins-context
+EOF
+
+              export KUBECONFIG=kubeconfig.yaml
+
+              echo "🚀 jentest-deployment에 새 이미지 적용"
+              kubectl set image deployment/jentest-deployment nginx=${FULL_IMAGE} -n test
+
+              echo "🔄 롤링 업데이트 상태 확인"
+              kubectl rollout status deployment/jentest-deployment -n test
+
+              echo "🧹 kubeconfig 정리"
+              rm -f kubeconfig.yaml
+            """
+          }
+        }
+      }
+    }
   }
 
   post {
     success {
-      echo "✅ 이미지 빌드 및 매니페스트 업데이트 성공: ${FULL_IMAGE}"
+      echo "✅ 이미지 빌드 및 배포 성공: ${FULL_IMAGE}"
     }
     failure {
       echo "❌ 실패. 로그를 확인하세요."
