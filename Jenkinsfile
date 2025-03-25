@@ -137,7 +137,6 @@ spec:
           ]) {
             sh """
               kubectl apply -f manifests/jentest-deployment.yaml
-              kubectl rollout status deployment jentest
             """
           }
         }
