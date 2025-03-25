@@ -18,6 +18,10 @@ spec:
       mountPath: /home/jenkins/agent
   - name: jnlp
     image: jenkins/inbound-agent:latest
+  - name: kubectl
+    image: gcr.io/cloud-builders/kubectl
+    command: ["cat"]
+    tty: true
   volumes:
   - name: harbor-creds
     secret:
@@ -123,11 +127,27 @@ spec:
         }
       }
     }
+
+    stage('Deploy to Kubernetes') {
+      steps {
+        container('kubectl') {
+          withKubeConfig([
+            serverUrl: 'https://172.18.0.4:6443',
+            credentialsId: 'jenkinsSA',
+          ]) {
+            sh """
+              kubectl apply -f manifests/jentest-deployment.yaml
+              kubectl rollout status deployment jentest
+            """
+          }
+        }
+      }
+    }
   }
 
   post {
     success {
-      echo "✅ 이미지 빌드 및 매니페스트 업데이트 성공: ${FULL_IMAGE}"
+      echo "✅ 이미지 빌드, 매니페스트 업데이트 및 배포 성공: ${FULL_IMAGE}"
     }
     failure {
       echo "❌ 실패. 로그를 확인하세요."
