@@ -48,24 +48,6 @@ spec:
       }
     }
 
-    stage('Skip CI Check') {
-      steps {
-        container('jnlp') {
-          script {
-            def skip = sh(
-              script: "git log -1 --pretty=%B | grep -c '\\[skip ci\\]' || true",
-              returnStdout: true
-            ).trim()
-            if (skip == "1") {
-              echo "⏭️ [skip ci] 커밋이 감지되어 파이프라인을 종료합니다."
-              currentBuild.result = 'SUCCESS'
-              error("[skip ci] detected - stopping pipeline.")
-            }
-          }
-        }
-      }
-    }
-
     stage('Check Kaniko Config') {
       steps {
         container('kaniko') {
@@ -78,9 +60,6 @@ spec:
       steps {
         container('kaniko') {
           sh """
-            echo '📁 현재 위치: ' `pwd`
-            echo '📄 index.html 파일 있는지 확인:'
-            ls -al
             cat index.html || echo '❌ index.html 없음'
             /kaniko/executor \
               --context `pwd` \
@@ -119,7 +98,7 @@ spec:
                 git config --global user.email "hse05078@gmail.com"
                 git config --global user.name "hwseo0406"
                 git add jentest-deployment.yaml
-                git commit -m "Update image to ${newImage} [skip ci]" || echo "No changes to commit"
+                git commit -m "Update image to ${newImage}" || echo "No changes to commit"
                 git push origin main
               """
             }
