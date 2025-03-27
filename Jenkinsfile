@@ -112,7 +112,7 @@ spec:
         container('kubectl') {
           withKubeConfig([
             serverUrl: 'https://172.18.0.4:6443',
-            credentialsId: 'jenktestSA',
+            credentialsId: 'jentestSA',
           ]) {
             sh """
               kubectl apply -f manifests/jentest-deployment.yaml
