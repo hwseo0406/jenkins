@@ -111,7 +111,7 @@ spec:
       steps {
         container('kubectl') {
           withKubeConfig([
-            serverUrl: 'https://172.18.0.4:6443',
+            //serverUrl: 'https://172.18.0.4:6443',
             credentialsId: 'jentestSA',
           ]) {
             sh """
